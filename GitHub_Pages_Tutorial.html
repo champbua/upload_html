@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload HTML to GitHub Pages</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #F5F3F0;
+      --surface:   #FFFFFF;
+      --border:    #E4E0DA;
+      --ink:       #1A1814;
+      --ink-2:     #6B6560;
+      --ink-3:     #A09A94;
+      --accent:    #2D6A7F;
+      --accent-lt: #EAF2F5;
+      --accent-dk: #1E4D5E;
+      --warm:      #C47B3A;
+      --warm-lt:   #FDF3E8;
+      --green:     #2E7D5A;
+      --green-lt:  #E8F5EE;
+      --radius:    14px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+      max-width: 560px;
+    }
+    .header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 15px;
+      color: var(--ink-2);
+      margin-top: 10px;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap {
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 28px;
+    }
+    .progress-bar-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .step-dots {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .step-dot {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .step-dot-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-3);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .step-dot.done .step-dot-circle {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    .step-dot.active .step-dot-circle {
+      background: var(--surface);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-lt);
+    }
+    .step-dot-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-3);
+      text-align: center;
+      line-height: 1.3;
+      display: none;
+    }
+    @media (min-width: 480px) {
+      .step-dot-label { display: block; }
+    }
+    .step-dot.active .step-dot-label { color: var(--accent); font-weight: 600; }
+    .step-dot.done .step-dot-label { color: var(--ink-2); }
+
+    /* ── CARD ── */
+    .card {
+      width: 100%;
+      max-width: 600px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(26,24,20,0.06);
+    }
+
+    /* ── STEP PANEL ── */
+    .step-panel {
+      display: none;
+      animation: fadeSlide 0.3s ease;
+    }
+    .step-panel.active { display: block; }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-top {
+      padding: 28px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .step-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--accent-lt);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .step-meta { flex: 1; }
+    .step-counter {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .step-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.3px;
+    }
+    .step-subtitle {
+      font-size: 13px;
+      color: var(--ink-2);
+      margin-top: 3px;
+    }
+
+    .step-body { padding: 24px 28px; }
+
+    /* ── CHECKLIST ── */
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    .check-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--accent-lt);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .checklist li strong { color: var(--ink); font-weight: 600; }
+
+    /* ── CALLOUT BLOCKS ── */
+    .callout {
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout-tip  { background: var(--warm-lt);  color: #6B3D12; border: 1px solid #F0D4B0; }
+    .callout-info { background: var(--accent-lt); color: #1A3D4D; border: 1px solid #BFD9E3; }
+    .callout-success { background: var(--green-lt); color: #1A4D36; border: 1px solid #A8D9BD; }
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .callout strong { font-weight: 600; }
+
+    /* ── CODE ── */
+    .code-inline {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 5px;
+      color: var(--accent-dk);
+    }
+    .code-block {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      background: var(--ink);
+      color: #A8D8EA;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-top: 16px;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    .code-block .comment { color: #6B7A8A; }
+    .code-block .highlight { color: #F0C070; }
+
+    /* ── URL BOX ── */
+    .url-box {
+      background: var(--bg);
+      border: 1.5px dashed var(--accent);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--accent-dk);
+      margin-top: 16px;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── FAQ ── */
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .faq-q {
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+      user-select: none;
+    }
+    .faq-q:hover { background: var(--bg); }
+    .faq-chevron { color: var(--ink-3); font-size: 12px; transition: transform 0.2s; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-a {
+      display: none;
+      padding: 0 16px 14px;
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.65;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── NAV BUTTONS ── */
+    .nav-row {
+      padding: 20px 28px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 9px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-dk); transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg); color: var(--ink); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+
+    .step-count-label {
+      font-size: 12px;
+      color: var(--ink-3);
+      font-weight: 500;
+    }
+
+    /* ── FINAL SUCCESS ── */
+    .success-hero {
+      text-align: center;
+      padding: 36px 28px 8px;
+    }
+    .success-emoji { font-size: 52px; margin-bottom: 16px; }
+    .success-hero h2 { font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+    .success-hero p { font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+
+    /* ── WHAT IS GITHUB BOX ── */
+    .concept-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 20px;
+      display: flex;
+      gap: 14px;
+    }
+    .concept-box-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .concept-box-text { font-size: 13px; color: var(--ink-2); line-height: 1.65; }
+    .concept-box-text strong { color: var(--ink); font-weight: 600; }
+
+    /* ── UPDATE STEPS ── */
+    .mini-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .mini-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+    .mini-step-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--accent-lt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">Getting Started</div>
+    <h1>Upload HTML to GitHub Pages</h1>
+    <p>From a local file to a live website — in under 10 minutes, no coding experience needed.</p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill" style="width:14.28%"></div>
+    </div>
+    <div class="step-dots" id="stepDots">
+      <div class="step-dot active" onclick="goToStep(0)">
+        <div class="step-dot-circle">1</div>
+        <div class="step-dot-label">Account</div>
+      </div>
+      <div class="step-dot" onclick="goToStep(1)">
+        <div class="step-dot-circle">2</div>
+        <div class="step-dot-label">Repository</div>
+      </div>
+      <div class="step-dot" onclick="goToStep(2)">
+        <div class="step-dot-circle">3</div>
+        <div class="step-dot-label">Upload</div>
+      </div>
+      <div class="step-dot" onclick="goToStep(3)">
+        <div class="step-dot-circle">4</div>
+        <div class="step-dot-label">Rename</div>
+      </div>
+      <div class="step-dot" onclick="goToStep(4)">
+        <div class="step-dot-circle">5</div>
+        <div class="step-dot-label">Pages</div>
+      </div>
+      <div class="step-dot" onclick="goToStep(5)">
+        <div class="step-dot-circle">6</div>
+        <div class="step-dot-label">After</div>
+      </div>
+      <div class="step-dot" onclick="goToStep(6)">
+        <div class="step-dot-circle">✓</div>
+        <div class="step-dot-label">Done</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD -->
+  <div class="card">
+
+    <!-- ── STEP 0: Account ── -->
+    <div class="step-panel active" id="panel-0">
+      <div class="step-top">
+        <div class="step-icon">👤</div>
+        <div class="step-meta">
+          <div class="step-counter">Step 1 of 6</div>
+          <div class="step-title">Create a GitHub Account</div>
+          <div class="step-subtitle">Free forever — no credit card needed</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="concept-box">
+          <div class="concept-box-icon">🗄️</div>
+          <div class="concept-box-text">
+            <strong>What is GitHub?</strong> Think of it as a free storage locker on the internet for your files.
+            <strong>GitHub Pages</strong> then takes your HTML file and turns it into a live website with a real URL you can share.
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <ul class="checklist">
+          <li><div class="check-num">1</div><span>Go to <strong>github.com/signup</strong> in your browser</span></li>
+          <li><div class="check-num">2</div><span>Enter your <strong>email address</strong></span></li>
+          <li><div class="check-num">3</div><span>Choose a <strong>username</strong> — this will appear in your website URL, so pick something clean (e.g. <code class="code-inline">yourname</code>)</span></li>
+          <li><div class="check-num">4</div><span>Create a <strong>password</strong></span></li>
+          <li><div class="check-num">5</div><span>Verify your email and complete the setup</span></li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">💡</div>
+          <div>Your username becomes part of the URL: <code class="code-inline">yourusername.github.io/project/</code> — choose it carefully.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" disabled>← Back</button>
+        <span class="step-count-label">1 / 7</span>
+        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: Repository ── -->
+    <div class="step-panel" id="panel-1">
+      <div class="step-top">
+        <div class="step-icon">📁</div>
+        <div class="step-meta">
+          <div class="step-counter">Step 2 of 6</div>
+          <div class="step-title">Create a Repository</div>
+          <div class="step-subtitle">Your project's home on GitHub</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="concept-box">
+          <div class="concept-box-icon">📦</div>
+          <div class="concept-box-text">
+            <strong>What is a repository?</strong> It's like a named folder that holds your project files. Each website you make gets its own repository.
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <ul class="checklist">
+          <li><div class="check-num">1</div><span>Click the <strong>+</strong> icon in the top right corner of GitHub</span></li>
+          <li><div class="check-num">2</div><span>Select <strong>"New repository"</strong></span></li>
+          <li><div class="check-num">3</div><span>Give it a name — use lowercase, hyphens only (e.g. <code class="code-inline">my-travel-page</code>)</span></li>
+          <li><div class="check-num">4</div><span>Set visibility to <strong>Public</strong></span></li>
+          <li><div class="check-num">5</div><span>Leave all other settings as default</span></li>
+          <li><div class="check-num">6</div><span>Click <strong>"Create repository"</strong></span></li>
+        </ul>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">ℹ️</div>
+          <div><strong>Public vs Private:</strong> GitHub Pages requires a Public repository on the free plan. Anyone with the link can view your site, but it won't appear in search results unless indexed.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <span class="step-count-label">2 / 7</span>
+        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Upload ── -->
+    <div class="step-panel" id="panel-2">
+      <div class="step-top">
+        <div class="step-icon">⬆️</div>
+        <div class="step-meta">
+          <div class="step-counter">Step 3 of 6</div>
+          <div class="step-title">Upload Your HTML File</div>
+          <div class="step-subtitle">Drag and drop — no command line needed</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <ul class="checklist">
+          <li><div class="check-num">1</div><span>Open your repository on GitHub</span></li>
+          <li><div class="check-num">2</div><span>Click the green <strong>"Add file"</strong> button</span></li>
+          <li><div class="check-num">3</div><span>Select <strong>"Upload files"</strong></span></li>
+          <li><div class="check-num">4</div><span>Drag your HTML file into the upload area, or click to browse</span></li>
+          <li><div class="check-num">5</div><span>At the bottom, type a short commit message like: <code class="code-inline">Add my website</code></span></li>
+          <li><div class="check-num">6</div><span>Click <strong>"Commit changes"</strong></span></li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">💡</div>
+          <div><strong>What is "Commit"?</strong> It's just GitHub's way of saying "save". Every time you save changes, GitHub keeps a record so you can always go back.</div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">ℹ️</div>
+          <div>Make sure all external resources in your HTML (fonts, images, scripts) use <strong>full URLs</strong> (starting with https://). Relative paths won't work on GitHub Pages unless the files are also in the same repository.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <span class="step-count-label">3 / 7</span>
+        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Rename ── -->
+    <div class="step-panel" id="panel-3">
+      <div class="step-top">
+        <div class="step-icon">✏️</div>
+        <div class="step-meta">
+          <div class="step-counter">Step 4 of 6</div>
+          <div class="step-title">Rename to <code class="code-inline" style="font-size:17px">index.html</code></div>
+          <div class="step-subtitle">So GitHub Pages knows which file is your homepage</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="concept-box">
+          <div class="concept-box-icon">🏠</div>
+          <div class="concept-box-text">
+            <strong>Why index.html?</strong> It's a web convention — when someone visits a folder URL, the server automatically looks for a file named <code class="code-inline">index.html</code> and serves it as the homepage.
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <ul class="checklist">
+          <li><div class="check-num">1</div><span>In your repository, click on your uploaded HTML file</span></li>
+          <li><div class="check-num">2</div><span>Click the <strong>pencil icon</strong> (edit) in the top right</span></li>
+          <li><div class="check-num">3</div><span>Click the <strong>filename field</strong> at the top of the editor</span></li>
+          <li><div class="check-num">4</div><span>Clear the current name and type <code class="code-inline">index.html</code></span></li>
+          <li><div class="check-num">5</div><span>Scroll down and click <strong>"Commit changes"</strong></span></li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">💡</div>
+          <div>Alternatively, rename the file to <code class="code-inline">index.html</code> on your computer <em>before</em> uploading — saves one step entirely.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <span class="step-count-label">4 / 7</span>
+        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Pages ── -->
+    <div class="step-panel" id="panel-4">
+      <div class="step-top">
+        <div class="step-icon">🌐</div>
+        <div class="step-meta">
+          <div class="step-counter">Step 5 of 6</div>
+          <div class="step-title">Enable GitHub Pages</div>
+          <div class="step-subtitle">One toggle — then your site goes live</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <ul class="checklist">
+          <li><div class="check-num">1</div><span>Go to your repository and click the <strong>"Settings"</strong> tab</span></li>
+          <li><div class="check-num">2</div><span>In the left sidebar, scroll down and click <strong>"Pages"</strong></span></li>
+          <li><div class="check-num">3</div><span>Under "Build and deployment", confirm <strong>Source</strong> is set to <strong>"Deploy from a branch"</strong></span></li>
+          <li><div class="check-num">4</div><span>Set branch to <strong>"main"</strong> and folder to <strong>"/ (root)"</strong></span></li>
+          <li><div class="check-num">5</div><span>GitHub saves automatically — wait <strong>1–2 minutes</strong></span></li>
+          <li><div class="check-num">6</div><span>Refresh the Settings → Pages page — you'll see your live URL appear</span></li>
+        </ul>
+
+        <div class="code-block">
+          <span class="comment"># Your live URL will look like this:</span><br>
+          <span class="highlight">https://yourusername.github.io/repository-name/</span>
+        </div>
+
+        <div class="callout callout-success">
+          <div class="callout-icon">✅</div>
+          <div><strong>It's live!</strong> Bookmark this URL. Share it. It's accessible 24/7 from anywhere in the world — for free.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <span class="step-count-label">5 / 7</span>
+        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: After ── -->
+    <div class="step-panel" id="panel-5">
+      <div class="step-top">
+        <div class="step-icon">🔧</div>
+        <div class="step-meta">
+          <div class="step-counter">Step 6 of 6</div>
+          <div class="step-title">Updating Your Website</div>
+          <div class="step-subtitle">Make changes anytime — updates go live in ~30 seconds</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="mini-steps">
+          <div class="mini-step">
+            <div class="mini-step-icon">📂</div>
+            <span>Go to your GitHub repository</span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">📄</div>
+            <span>Click on <code class="code-inline">index.html</code></span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">✏️</div>
+            <span>Click the pencil icon to edit</span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">💾</div>
+            <span>Make changes and click <strong>"Commit changes"</strong></span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">🚀</div>
+            <span>Your live site updates automatically in ~30 seconds</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:12px;">Common Questions</div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            My site shows a 404 error <span class="faq-chevron">▼</span>
+          </div>
+          <div class="faq-a">Wait 2–3 minutes after enabling GitHub Pages. Make sure the file is named exactly <code class="code-inline">index.html</code> (lowercase) and is in the root of your repository.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            Images or fonts aren't showing up <span class="faq-chevron">▼</span>
+          </div>
+          <div class="faq-a">All external resources must use full <code class="code-inline">https://</code> URLs. Relative paths (like <code class="code-inline">./image.png</code>) only work if those files are also uploaded to the same repository.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            Can I add more pages to my site? <span class="faq-chevron">▼</span>
+          </div>
+          <div class="faq-a">Yes! Upload any additional HTML files to your repository. They'll be accessible at <code class="code-inline">yourusername.github.io/repo-name/filename.html</code>.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            Can I use a custom domain? <span class="faq-chevron">▼</span>
+          </div>
+          <div class="faq-a">Yes. In Settings → Pages, you can add a custom domain (e.g. <code class="code-inline">mytrip.com</code>). You'll need to own the domain and configure your DNS settings to point to GitHub's servers.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <span class="step-count-label">6 / 7</span>
+        <button class="btn btn-primary" onclick="nextStep()">Finish 🎉</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 6: Done ── -->
+    <div class="step-panel" id="panel-6">
+      <div class="success-hero">
+        <div class="success-emoji">🎉</div>
+        <h2>Your site is live!</h2>
+        <p>You've successfully gone from a local HTML file to a live website accessible from anywhere in the world — for free.</p>
+      </div>
+      <div class="step-body">
+        <div class="url-box">
+          🌐 &nbsp;https://<strong>yourusername</strong>.github.io/<strong>repository-name</strong>/
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:12px;">What you can do now</div>
+
+        <div class="mini-steps">
+          <div class="mini-step">
+            <div class="mini-step-icon">📱</div>
+            <span>Share the URL with anyone — works on all devices</span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">🔖</div>
+            <span>Bookmark it for easy access</span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">✏️</div>
+            <span>Edit your HTML anytime via the pencil icon in GitHub</span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">📂</div>
+            <span>Upload additional files to expand your site</span>
+          </div>
+          <div class="mini-step">
+            <div class="mini-step-icon">🌍</div>
+            <span>Your site is online 24/7, no maintenance needed</span>
+          </div>
+        </div>
+
+        <div class="callout callout-success" style="margin-top:20px">
+          <div class="callout-icon">✨</div>
+          <div>Changes you commit in GitHub go live in about <strong>30 seconds</strong>. No need to re-enable anything — it's automatic from now on.</div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <span class="step-count-label">7 / 7</span>
+        <button class="btn btn-primary" onclick="goToStep(0)">Start over ↺</button>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <script>
+    let current = 0;
+    const total = 7;
+
+    function goToStep(n) {
+      document.getElementById('panel-' + current).classList.remove('active');
+      const dots = document.querySelectorAll('.step-dot');
+      dots[current].classList.remove('active');
+
+      current = n;
+
+      document.getElementById('panel-' + current).classList.add('active');
+      dots.forEach((d, i) => {
+        d.classList.remove('active', 'done');
+        if (i < current) d.classList.add('done');
+        if (i === current) d.classList.add('active');
+      });
+
+      const pct = ((current + 1) / total) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+
+      // update done checkmarks
+      dots.forEach((d, i) => {
+        const circle = d.querySelector('.step-dot-circle');
+        if (i < current) {
+          circle.textContent = '✓';
+        } else if (i === 6) {
+          circle.textContent = '✓';
+        } else {
+          circle.textContent = i + 1;
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function nextStep() {
+      if (current < total - 1) goToStep(current + 1);
+    }
+
+    function prevStep() {
+      if (current > 0) goToStep(current - 1);
+    }
+
+    function toggleFaq(el) {
+      const item = el.parentElement;
+      item.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
